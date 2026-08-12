@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+certificados/
+ESPECIFICACIONES TECNICAS - 2025/
+*.xls
+*.xlsx
+*.xlsm
+*.pdf
+frontend/private/
+frontend/src/data/bottleFormats2025.js
+frontend/public/botellas/
+backend/data/
+backend/migrations/source-dumps/

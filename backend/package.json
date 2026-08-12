@@ -1,0 +1,20 @@
+{
+  "name": "etiquetas2-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "db:seed": "node scripts/seed-admin.js",
+    "db:import-digitalizacion": "node scripts/import-digitalizacion-dump.js",
+    "db:migrate-to-postgres": "node scripts/migrate-sqlite-to-postgres.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0"
+  }
+}

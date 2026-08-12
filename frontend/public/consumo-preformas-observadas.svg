@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .bg { fill: #f4f7fb; }
+      .ink { fill: #152238; font-family: Arial, Helvetica, sans-serif; }
+      .muted { fill: #667085; font-family: Arial, Helvetica, sans-serif; }
+      .card { fill: #ffffff; stroke: #d9e2ec; stroke-width: 1.5; }
+      .panel-title { fill: #152238; font-family: Arial, Helvetica, sans-serif; font-size: 28px; font-weight: 800; }
+      .kpi-label { fill: #667085; font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+      .kpi-value { fill: #152238; font-family: Arial, Helvetica, sans-serif; font-size: 44px; font-weight: 800; }
+      .kpi-note { fill: #667085; font-family: Arial, Helvetica, sans-serif; font-size: 18px; }
+      .small { fill: #667085; font-family: Arial, Helvetica, sans-serif; font-size: 17px; }
+      .axis { stroke: #d9e2ec; stroke-width: 2; }
+      .bar-bg { fill: #edf2f7; }
+      .white { fill: #ffffff; font-family: Arial, Helvetica, sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1920" height="1080"/>
+  <rect x="0" y="0" width="1920" height="118" fill="#152238"/>
+  <text x="64" y="58" class="white" font-size="38" font-weight="800">Consumo de preformas observadas</text>
+  <text x="64" y="92" class="white" font-size="20" opacity=".78">Vista del proceso | Periodo: 2026-02-05 al 2026-07-21</text>
+  <rect x="1494" y="30" width="362" height="58" rx="6" fill="#ffffff" opacity=".12"/>
+  <text x="1520" y="66" class="white" font-size="22" font-weight="700">Preformas observadas en consumo</text>
+
+  <rect class="card" x="64" y="150" width="338" height="144" rx="8"/>
+  <text class="kpi-label" x="88" y="193">Cajas unicas</text>
+  <text class="kpi-value" x="88" y="250">120</text>
+  <text class="kpi-note" x="88" y="278">cajas</text>
+
+  <rect class="card" x="426" y="150" width="338" height="144" rx="8"/>
+  <text class="kpi-label" x="450" y="193">Preformas usadas</text>
+  <text class="kpi-value" x="450" y="250">885.745</text>
+
+  <rect class="card" x="788" y="150" width="338" height="144" rx="8"/>
+  <text class="kpi-label" x="812" y="193">Botellas aptas</text>
+  <text class="kpi-value" x="812" y="250">870.942</text>
+
+  <rect class="card" x="1150" y="150" width="338" height="144" rx="8"/>
+  <text class="kpi-label" x="1174" y="193">Desperdicio total</text>
+  <text class="kpi-value" x="1174" y="250">14.803</text>
+
+  <rect class="card" x="1512" y="150" width="344" height="144" rx="8"/>
+  <text class="kpi-label" x="1536" y="193">Desperdicio general</text>
+  <text x="1536" y="250" class="ink" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="800">1,67%</text>
+
+  <rect class="card" x="64" y="326" width="520" height="300" rx="8"/>
+  <text class="panel-title" x="96" y="372">Vista general</text>
+  <text class="muted" x="96" y="406" font-size="20">Resultado del consumo de preformas observadas.</text>
+  <circle cx="242" cy="510" r="82" fill="#eef4ff" stroke="#bfdbfe" stroke-width="18"/>
+  <path d="M242 428 A82 82 0 1 1 176 558" stroke="#2457a6" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <text x="242" y="504" text-anchor="middle" class="ink" font-size="44" font-weight="800">1,67%</text>
+  <text x="242" y="536" text-anchor="middle" class="muted" font-size="18">desperdicio</text>
+  <line x1="96" y1="592" x2="552" y2="592" class="axis"/>
+  <text x="96" y="622" class="muted" font-size="19">Perdida registrada en el uso de material observado.</text>
+
+  <rect class="card" x="616" y="326" width="620" height="360" rx="8"/>
+  <text class="panel-title" x="648" y="372">Desperdicio por OP de caja</text>
+  <text class="muted" x="648" y="406" font-size="20">Merma calculada por cada OP consumida.</text>
+  
+        <text x="664" y="450" class="ink" font-size="20" font-weight="800">063TH-2025</text>
+        <rect x="820" y="426" width="330" height="27" rx="5" class="bar-bg"/>
+        <rect x="820" y="426" width="330.0" height="27" rx="5" fill="#2457a6"/>
+        <text x="1170" y="450" class="ink" font-size="20" font-weight="800">2,71%</text>
+        <text x="664" y="473" class="small" font-size="15">4.592 und. | 20 cajas unicas</text>
+
+        <text x="664" y="498" class="ink" font-size="20" font-weight="800">068TJ-2025</text>
+        <rect x="820" y="474" width="330" height="27" rx="5" class="bar-bg"/>
+        <rect x="820" y="474" width="308.2" height="27" rx="5" fill="#0f766e"/>
+        <text x="1170" y="498" class="ink" font-size="20" font-weight="800">2,54%</text>
+        <text x="664" y="521" class="small" font-size="15">4.027 und. | 24 cajas unicas</text>
+
+        <text x="664" y="546" class="ink" font-size="20" font-weight="800">071I-2023</text>
+        <rect x="820" y="522" width="330" height="27" rx="5" class="bar-bg"/>
+        <rect x="820" y="522" width="198.8" height="27" rx="5" fill="#f97316"/>
+        <text x="1170" y="546" class="ink" font-size="20" font-weight="800">1,64%</text>
+        <text x="664" y="569" class="small" font-size="15">4.145 und. | 33 cajas unicas</text>
+
+        <text x="664" y="594" class="ink" font-size="20" font-weight="800">002A-2024</text>
+        <rect x="820" y="570" width="330" height="27" rx="5" class="bar-bg"/>
+        <rect x="820" y="570" width="83.8" height="27" rx="5" fill="#7c3aed"/>
+        <text x="1170" y="594" class="ink" font-size="20" font-weight="800">0,69%</text>
+        <text x="664" y="617" class="small" font-size="15">556 und. | 12 cajas unicas</text>
+
+        <text x="664" y="642" class="ink" font-size="20" font-weight="800">016E-2025</text>
+        <rect x="820" y="618" width="330" height="27" rx="5" class="bar-bg"/>
+        <rect x="820" y="618" width="80.6" height="27" rx="5" fill="#2457a6"/>
+        <text x="1170" y="642" class="ink" font-size="20" font-weight="800">0,66%</text>
+        <text x="664" y="665" class="small" font-size="15">1.483 und. | 31 cajas unicas</text>
+
+  <rect class="card" x="1268" y="326" width="588" height="360" rx="8"/>
+  <text class="panel-title" x="1300" y="372">Cajas unicas por OP</text>
+  <text class="muted" x="1300" y="406" font-size="20">Conteo sin duplicar dentro de la misma OP.</text>
+  
+        <text x="1300" y="440" class="ink" font-size="21" font-weight="800">071I-2023</text>
+        <rect x="1455" y="415" width="300" height="28" rx="5" class="bar-bg"/>
+        <rect x="1455" y="415" width="300.0" height="28" rx="5" fill="#2457a6"/>
+        <text x="1776" y="440" class="ink" font-size="21" font-weight="800">33</text>
+
+        <text x="1300" y="485" class="ink" font-size="21" font-weight="800">016E-2025</text>
+        <rect x="1455" y="460" width="300" height="28" rx="5" class="bar-bg"/>
+        <rect x="1455" y="460" width="281.8" height="28" rx="5" fill="#0f766e"/>
+        <text x="1776" y="485" class="ink" font-size="21" font-weight="800">31</text>
+
+        <text x="1300" y="530" class="ink" font-size="21" font-weight="800">068TJ-2025</text>
+        <rect x="1455" y="505" width="300" height="28" rx="5" class="bar-bg"/>
+        <rect x="1455" y="505" width="218.2" height="28" rx="5" fill="#f97316"/>
+        <text x="1776" y="530" class="ink" font-size="21" font-weight="800">24</text>
+
+        <text x="1300" y="575" class="ink" font-size="21" font-weight="800">063TH-2025</text>
+        <rect x="1455" y="550" width="300" height="28" rx="5" class="bar-bg"/>
+        <rect x="1455" y="550" width="181.8" height="28" rx="5" fill="#7c3aed"/>
+        <text x="1776" y="575" class="ink" font-size="21" font-weight="800">20</text>
+
+        <text x="1300" y="620" class="ink" font-size="21" font-weight="800">002A-2024</text>
+        <rect x="1455" y="595" width="300" height="28" rx="5" class="bar-bg"/>
+        <rect x="1455" y="595" width="109.1" height="28" rx="5" fill="#2457a6"/>
+        <text x="1776" y="620" class="ink" font-size="21" font-weight="800">12</text>
+
+  <rect class="card" x="64" y="690" width="1792" height="300" rx="8"/>
+  <text class="panel-title" x="96" y="736">Desperdicio por formato</text>
+  <text class="muted" x="96" y="766" font-size="20">Formatos con mayor porcentaje de desperdicio.</text>
+  
+        <text x="96" y="790" class="ink" font-size="19" font-weight="800">BOT CR - 2 LT-48 GR SEASA GEN</text>
+        <rect x="610" y="766" width="700" height="28" rx="5" class="bar-bg"/>
+        <rect x="610" y="766" width="700.0" height="28" rx="5" fill="#2457a6"/>
+        <text x="1330" y="790" class="ink" font-size="20" font-weight="800">3,38%</text>
+        <text x="1445" y="790" class="small">797 und.</text>
+
+        <text x="96" y="832" class="ink" font-size="19" font-weight="800">BOT-CR-3.0 LT-56 GR-GENERICO</text>
+        <rect x="610" y="808" width="700" height="28" rx="5" class="bar-bg"/>
+        <rect x="610" y="808" width="591.5" height="28" rx="5" fill="#0f766e"/>
+        <text x="1330" y="832" class="ink" font-size="20" font-weight="800">2,85%</text>
+        <text x="1445" y="832" class="small">4.058 und.</text>
+
+        <text x="96" y="874" class="ink" font-size="19" font-weight="800">BOT-CR-3000 CC-54.6 GR SF-LEONEL</text>
+        <rect x="610" y="850" width="700" height="28" rx="5" class="bar-bg"/>
+        <rect x="610" y="850" width="444.8" height="28" rx="5" fill="#f97316"/>
+        <text x="1330" y="874" class="ink" font-size="20" font-weight="800">2,15%</text>
+        <text x="1445" y="874" class="small">7.661 und.</text>
+
+        <text x="96" y="916" class="ink" font-size="19" font-weight="800">BOT-CR-3.0 LT-56 GR-LAUVAL</text>
+        <rect x="610" y="892" width="700" height="28" rx="5" class="bar-bg"/>
+        <rect x="610" y="892" width="411.0" height="28" rx="5" fill="#7c3aed"/>
+        <text x="1330" y="916" class="ink" font-size="20" font-weight="800">1,98%</text>
+        <text x="1445" y="916" class="small">534 und.</text>
+
+        <text x="96" y="958" class="ink" font-size="19" font-weight="800">BOT-CR-3000 CC-54.6 GR SF-LIMONERO</text>
+        <rect x="610" y="934" width="700" height="28" rx="5" class="bar-bg"/>
+        <rect x="610" y="934" width="198.6" height="28" rx="5" fill="#475569"/>
+        <text x="1330" y="958" class="ink" font-size="20" font-weight="800">0,96%</text>
+        <text x="1445" y="958" class="small">540 und.</text>
+
+  <text x="64" y="1034" class="muted" font-size="18">Fuente: PREFORMAS SIN MOVIMIENTO.xlsx | Cajas contadas por OP + N CAJA, separando valores por coma y sin duplicar en la misma OP.</text>
+</svg>
