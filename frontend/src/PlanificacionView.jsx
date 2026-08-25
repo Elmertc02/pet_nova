@@ -6,6 +6,9 @@ import {
   calcularDistribucion, calcularDistribucionCombinada, calcularSeguimiento, calcularHistorialSemana,
   asegurarHorarios, DIAS, DIAS_ABR, MESES, SEMANAS,
 } from './planificacionEngine.js';
+import {
+  MAX_SEMANAS_MENSUAL, MAX_MAQUINAS_AUTOMATICO, maquinasParaAutomatico, calcularReparto,
+} from './planificacionMensualEngine.js';
 
 const TURNOS_MANT = [
   { value: 'AMBOS', label: 'Ambos turnos' },
@@ -1585,7 +1588,11 @@ function SeguimientoVista({
   );
 }
 
-export default function PlanificacionView() {
+// Planificacion Semanal -- todo lo que ya existia de Planificacion (Nueva
+// planificacion / Vista general / Seguimiento), ahora como su propia pestaña
+// dentro de la division Semanal/Mensual (ver PlanificacionView() al final
+// del archivo).
+function PlanificacionSemanalView() {
   const [subView, setSubView] = useState('nueva'); // 'nueva' | 'general'
   const [machines, setMachines] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -2487,6 +2494,340 @@ export default function PlanificacionView() {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+// Cuantas maquinas pueden producir la MISMA botella al mismo tiempo -- hoy
+// como mucho MAX_MAQUINAS_AUTOMATICO (2), aunque el catalogo diga que hay
+// mas maquinas capacitadas para esa botella. En el catalogo se puede
+// tildar cualquiera como candidata (sin tope); el reparto automatico solo
+// usa, de las tildadas, las MAX_MAQUINAS_AUTOMATICO mas rapidas.
+const MAX_MAQUINAS_SIMULTANEAS = MAX_MAQUINAS_AUTOMATICO;
+
+// SEM 63 y SEM 78 trabajan secuencialmente -- si una esta produciendo, la
+// otra no, y viceversa (comparten el mismo tiempo fisico). Para el reparto
+// automatico las dos tienen que descontar de UN SOLO pool de horas ("SEM
+// 63/78"), no de dos pools independientes -- si no, el sistema calcularia
+// como si pudieran producir el doble de lo real. El resto de las maquinas
+// no comparte nada, cada una tiene su propia capacidad.
+const MAQUINAS_HORAS_COMPARTIDAS = { 'SEM 63': 'SEM 63/78', 'SEM 78': 'SEM 63/78' };
+const claveCapacidad = (maquina) => MAQUINAS_HORAS_COMPARTIDAS[maquina] || maquina;
+
+// Planificacion Mensual -- tabla dinamica de todas las botellas del
+// catalogo (agrupadas por codigo, con TODAS las maquinas candidatas
+// tildables). Ahora se carga un solo numero por botella (Estimado
+// Mensual) y el reparto semana a semana lo calcula solo el sistema, segun
+// la capacidad (horas disponibles) que cargues por maquina -- usando como
+// mucho MAX_MAQUINAS_AUTOMATICO de las maquinas tildadas para esa botella
+// (las mas rapidas). Si no alcanza a cubrir el Estimado Mensual dentro del
+// mes, se avisa (no bloquea nada).
+//
+// Ojo: por ahora esto vive solo en el navegador (no se guarda en el
+// servidor) -- se pierde si recargas la pagina. Se persiste en un paso
+// siguiente, cuando el diseño ya este firme.
+function PlanificacionMensualView() {
+  const [catalogo, setCatalogo] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [filtro, setFiltro] = useState('');
+  const [estimados, setEstimados] = useState({}); // { [codBot]: { stockActual, estimadoMensual } }
+  const [capacidad, setCapacidad] = useState({}); // { [maquina]: [horas semana1..5] }
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const todas = [];
+        let offset = 0;
+        const limit = 500;
+        for (let i = 0; i < 20; i += 1) { // tope de seguridad, ~10.000 filas
+          const pagina = await localApi.getBotellasAdmin({ limit, offset });
+          todas.push(...pagina.rows);
+          if (pagina.rows.length < limit || todas.length >= pagina.total) break;
+          offset += limit;
+        }
+        if (cancelado) return;
+        setCatalogo(todas);
+        setLoaded(true);
+      } catch (error) {
+        if (!cancelado) { setLoadError(error.message || 'No se pudo cargar el catalogo.'); setLoaded(true); }
+      }
+    })();
+    return () => { cancelado = true; };
+  }, []);
+
+  // Agrupa el catalogo por codigo de botella -- una fila por botella, con
+  // todas las maquinas que la producen (cada una con su velocidad y la
+  // clave de capacidad que le corresponde -- ver claveCapacidad()).
+  const botellas = useMemo(() => {
+    const mapa = new Map();
+    for (const b of catalogo) {
+      const cod = b.codBotella;
+      if (!cod) continue;
+      if (!mapa.has(cod)) mapa.set(cod, { codBot: cod, descripcion: b.descripcion || '', maquinas: [] });
+      const item = mapa.get(cod);
+      if (!item.descripcion && b.descripcion) item.descripcion = b.descripcion;
+      if (b.maquina && !item.maquinas.some((m) => m.maquina === b.maquina)) {
+        item.maquinas.push({ maquina: b.maquina, velocidad: Number(b.velocidad) || 0, claveCapacidad: claveCapacidad(b.maquina) });
+      }
+    }
+    return Array.from(mapa.values()).sort((a, b) => a.codBot.localeCompare(b.codBot, 'es', { numeric: true }));
+  }, [catalogo]);
+
+  // Filas de la tabla de capacidad: una por clave de capacidad -- SEM 63 y
+  // SEM 78 comparten fila ("SEM 63/78") porque trabajan secuencialmente
+  // (nunca las dos a la vez, se turnan las mismas horas); el resto, una
+  // fila por maquina como siempre.
+  const clavesCapacidad = useMemo(() => {
+    const mapa = new Map();
+    for (const nombre of new Set(catalogo.map((b) => b.maquina).filter(Boolean))) {
+      const clave = claveCapacidad(nombre);
+      if (!mapa.has(clave)) mapa.set(clave, new Set());
+      mapa.get(clave).add(nombre);
+    }
+    return Array.from(mapa.entries())
+      .map(([clave, maquinas]) => ({ clave, maquinas: Array.from(maquinas).sort() }))
+      .sort((a, b) => a.clave.localeCompare(b.clave));
+  }, [catalogo]);
+
+  const botellasFiltradas = useMemo(() => {
+    const q = filtro.trim().toLowerCase();
+    if (!q) return botellas;
+    return botellas.filter((b) => (
+      b.codBot.toLowerCase().includes(q)
+      || b.descripcion.toLowerCase().includes(q)
+      || b.maquinas.some((m) => m.maquina.toLowerCase().includes(q))
+    ));
+  }, [botellas, filtro]);
+
+  const estimadoDe = (codBot) => estimados[codBot] || { stockActual: 0, estimadoMensual: 0 };
+  const actualizarStock = (codBot, valor) => setEstimados((cur) => ({
+    ...cur, [codBot]: { ...estimadoDe(codBot), stockActual: Number(valor) || 0 },
+  }));
+  const actualizarEstimadoMensual = (codBot, valor) => setEstimados((cur) => ({
+    ...cur, [codBot]: { ...estimadoDe(codBot), estimadoMensual: Number(valor) || 0 },
+  }));
+
+  // Maquinas candidatas por botella -- tildadas a mano, sin tope (el motor
+  // automatico despues recorta a MAX_MAQUINAS_AUTOMATICO, ver mas abajo).
+  const [seleccionMaquinas, setSeleccionMaquinas] = useState({}); // { [codBot]: [maquina, ...] }
+  const maquinasSeleccionadas = (codBot) => seleccionMaquinas[codBot] || [];
+  const toggleMaquina = (codBot, maquina) => setSeleccionMaquinas((cur) => {
+    const actual = cur[codBot] || [];
+    return actual.includes(maquina)
+      ? { ...cur, [codBot]: actual.filter((m) => m !== maquina) }
+      : { ...cur, [codBot]: [...actual, maquina] };
+  });
+
+  const actualizarCapacidad = (maquina, semanaIdx, valor) => setCapacidad((cur) => {
+    const horas = Array.from({ length: MAX_SEMANAS_MENSUAL }, (_, i) => Number(cur[maquina]?.[i]) || 0);
+    horas[semanaIdx] = Number(valor) || 0;
+    return { ...cur, [maquina]: horas };
+  });
+
+  // Reparto automatico: para cada botella, de las maquinas tildadas se usan
+  // como mucho MAX_MAQUINAS_AUTOMATICO (las mas rapidas de las tildadas),
+  // y se reparte semana a semana contra la capacidad cargada abajo. El
+  // orden de la lista (alfabetico por codigo) es la prioridad cuando dos
+  // botellas compiten por la misma maquina.
+  const reparto = useMemo(() => {
+    const items = botellas.map((b) => ({
+      codBot: b.codBot,
+      estimadoMensual: estimadoDe(b.codBot).estimadoMensual,
+      maquinas: maquinasParaAutomatico(
+        b.maquinas.filter((m) => maquinasSeleccionadas(b.codBot).includes(m.maquina)),
+      ),
+    }));
+    return calcularReparto({ items, capacidad, numSemanas: MAX_SEMANAS_MENSUAL });
+  }, [botellas, estimados, seleccionMaquinas, capacidad]);
+  const repartoPorCod = useMemo(() => Object.fromEntries(reparto.map((r) => [r.codBot, r])), [reparto]);
+
+  return (
+    <section className="etiquetas-section">
+      <div className="etiquetas-intro-banner">
+        Cargá el Estimado Mensual de cada botella y las máquinas candidatas (tildá todas las que
+        la pueden producir, sin tope) -- el sistema reparte solo cuánto producir cada semana,
+        usando como mucho {MAX_MAQUINAS_AUTOMATICO} de esas máquinas (las más rápidas de las
+        tildadas) y respetando las horas disponibles que cargues abajo. Si no llega a cubrir el
+        estimado del mes, aparece un aviso -- no bloquea nada. Por ahora no se guarda: se pierde
+        si recargás la página.
+      </div>
+
+      <div className="panel">
+        <div className="section-heading">
+          <div><span>Planificacion Mensual</span><h2>Capacidad semanal por maquina</h2></div>
+        </div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: -6, marginBottom: 10 }}>
+          Horas disponibles de producción por semana, para cada máquina -- el reparto automático
+          de abajo no las supera.
+        </p>
+        <div className="etiquetas-table-wrap">
+          <table className="etiquetas-table">
+            <thead>
+              <tr>
+                <th>Maquina</th>
+                {Array.from({ length: MAX_SEMANAS_MENSUAL }, (_, i) => <th key={i}>Semana {i + 1}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {clavesCapacidad.map(({ clave, maquinas }) => (
+                <tr key={clave}>
+                  <td>
+                    <strong>{clave}</strong>
+                    {maquinas.length > 1 ? (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                        (comparten horas: {maquinas.join(' / ')})
+                      </div>
+                    ) : null}
+                  </td>
+                  {Array.from({ length: MAX_SEMANAS_MENSUAL }, (_, i) => (
+                    <td key={i}>
+                      <input
+                        type="number" min="0" style={{ width: 75 }}
+                        value={capacidad[clave]?.[i] ?? 0}
+                        onChange={(e) => actualizarCapacidad(clave, i, e.target.value)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="section-heading">
+          <div><span>Planificacion Mensual</span><h2>Botellas — {botellasFiltradas.length}</h2></div>
+        </div>
+        <div className="form-grid planificacion-config-grid" style={{ marginBottom: 10 }}>
+          <label className="field">
+            <span>Buscar</span>
+            <input
+              type="text" placeholder="Codigo, descripcion o maquina..."
+              value={filtro} onChange={(e) => setFiltro(e.target.value)}
+            />
+          </label>
+        </div>
+
+        {loadError ? (
+          <p className="etiquetas-form-error">{loadError}</p>
+        ) : !loaded ? (
+          <p className="etiquetas-empty">Cargando...</p>
+        ) : botellasFiltradas.length === 0 ? (
+          <p className="etiquetas-empty">Sin botellas para ese filtro.</p>
+        ) : (
+          <div className="etiquetas-table-wrap">
+            <table className="etiquetas-table">
+              <thead>
+                <tr>
+                  <th>Cod. Botella</th><th>Descripcion</th><th>Stock actual</th>
+                  <th>Estimado Mensual</th>
+                  {Array.from({ length: MAX_SEMANAS_MENSUAL }, (_, i) => <th key={i}>Semana {i + 1} (auto)</th>)}
+                  <th>Maquinas candidatas</th><th>Cumple el mes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {botellasFiltradas.map((b) => {
+                  const est = estimadoDe(b.codBot);
+                  const elegidas = maquinasSeleccionadas(b.codBot);
+                  const r = repartoPorCod[b.codBot];
+                  const usadasAuto = maquinasParaAutomatico(b.maquinas.filter((m) => elegidas.includes(m.maquina)));
+                  return (
+                    <tr key={b.codBot}>
+                      <td><strong>{b.codBot}</strong></td>
+                      <td style={{ minWidth: 200 }}>{b.descripcion || '-'}</td>
+                      <td>
+                        <input
+                          type="number" min="0" style={{ width: 90 }}
+                          value={est.stockActual}
+                          onChange={(e) => actualizarStock(b.codBot, e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number" min="0" style={{ width: 90, fontWeight: 700 }}
+                          value={est.estimadoMensual}
+                          onChange={(e) => actualizarEstimadoMensual(b.codBot, e.target.value)}
+                        />
+                      </td>
+                      {(r?.porSemana || Array.from({ length: MAX_SEMANAS_MENSUAL }, () => 0)).map((valor, i) => (
+                        <td key={i}>{valor > 0 ? Math.round(valor).toLocaleString() : '—'}</td>
+                      ))}
+                      <td style={{ minWidth: 160 }}>
+                        {b.maquinas.length === 0 ? (
+                          '-'
+                        ) : (
+                          <details>
+                            <summary>
+                              {elegidas.length === 0 ? 'Elegir maquinas...' : `${elegidas.length} elegida${elegidas.length > 1 ? 's' : ''}`}
+                            </summary>
+                            {b.maquinas.map((m) => {
+                              const checked = elegidas.includes(m.maquina);
+                              const usadaAhora = usadasAuto.some((u) => u.maquina === m.maquina);
+                              return (
+                                <label key={m.maquina} className="planificacion-checkbox" style={{ display: 'block', fontSize: '0.78rem' }}>
+                                  <input type="checkbox" checked={checked} onChange={() => toggleMaquina(b.codBot, m.maquina)} />
+                                  {m.maquina} ({m.velocidad}/h){usadaAhora ? ' ✓ en uso' : ''}
+                                </label>
+                              );
+                            })}
+                            {elegidas.length > MAX_MAQUINAS_AUTOMATICO && (
+                              <span className="etiquetas-op-status-warn" style={{ display: 'block', fontSize: '0.72rem', marginTop: 2 }}>
+                                ⚠ tildaste {elegidas.length}, el calculo automatico usa solo las {MAX_MAQUINAS_AUTOMATICO} mas rapidas
+                              </span>
+                            )}
+                          </details>
+                        )}
+                      </td>
+                      <td>
+                        {!r || r.requerido <= 0 ? (
+                          <span style={{ color: 'var(--muted)' }}>-</span>
+                        ) : r.cumplido ? (
+                          <span className="etiquetas-op-status-ok">Si</span>
+                        ) : (
+                          <span className="etiquetas-op-status-warn">
+                            No se logro cubrir -- faltan {Math.round(r.faltante).toLocaleString()}u
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// División Semanal / Mensual. La Semanal es exactamente lo que ya existia de
+// Planificacion (PlanificacionSemanalView, sin cambios); la Mensual es el
+// Plan Maestro de Produccion (MPS).
+export default function PlanificacionView() {
+  const [vista, setVista] = useState('semanal'); // 'semanal' | 'mensual'
+  return (
+    <section className="etiquetas-section">
+      <div className="planificacion-subtabs">
+        <button
+          type="button"
+          className={`secondary-action ${vista === 'semanal' ? 'active-option' : ''}`}
+          onClick={() => setVista('semanal')}
+        >
+          Semanal
+        </button>
+        <button
+          type="button"
+          className={`secondary-action ${vista === 'mensual' ? 'active-option' : ''}`}
+          onClick={() => setVista('mensual')}
+        >
+          Mensual
+        </button>
+      </div>
+      {vista === 'semanal' ? <PlanificacionSemanalView /> : <PlanificacionMensualView />}
     </section>
   );
 }

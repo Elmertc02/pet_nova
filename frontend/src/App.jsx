@@ -17683,39 +17683,31 @@ function LoginScreen({ onLogin, onLocalLogin }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const [isLocalMode, setIsLocalMode] = useState(false);
-  const [localUsername, setLocalUsername] = useState('');
-  const [localPassword, setLocalPassword] = useState('');
-  const [localError, setLocalError] = useState('');
-  const [isLocalLoading, setIsLocalLoading] = useState(false);
-
-  const submitLocalLogin = async (event) => {
-    event.preventDefault();
-    setIsLocalLoading(true);
-    setLocalError('');
-
-    if (!localUsername.trim() || !localPassword) {
-      setLocalError('Ingrese usuario y contrasena.');
-      setIsLocalLoading(false);
-      return;
-    }
-
-    const result = await onLocalLogin(localUsername, localPassword);
-
-    if (!result?.ok) {
-      setLocalError(result?.message ?? 'No se pudo iniciar sesion local. Verifica que el servidor local este corriendo (npm run server).');
-    }
-
-    setIsLocalLoading(false);
-  };
+  
 
   const submitLogin = async (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError('');
+    // Intentar autenticacion local primero (backend Postgres). Si falla,
+    // continuar con Supabase (si esta disponible).
+    if (typeof onLocalLogin === 'function') {
+      try {
+        const localResult = await onLocalLogin(username, password);
+        console.log('localResult', localResult);
+        if (localResult?.ok) {
+          setIsLoading(false);
+          return;
+        }
+        // si no ok, seguir al intent de Supabase
+      } catch (err) {
+        console.error('local login error', err);
+        // fallo local -> intentar Supabase a continuacion
+      }
+    }
 
     if (!supabaseConfigReady || !supabase) {
-      setError('Faltan variables de Supabase en Vercel.');
+      setError('Faltan variables de Supabase y la autenticacion local fallo.');
       setIsLoading(false);
       return;
     }
@@ -17794,43 +17786,7 @@ function LoginScreen({ onLogin, onLocalLogin }) {
           </button>
         </form>
 
-        <div className="login-local-toggle">
-          <button type="button" className="etiquetas-link-button" onClick={() => setIsLocalMode((open) => !open)}>
-            {isLocalMode ? 'Ocultar acceso local' : 'Entrar como administrador local'}
-          </button>
-        </div>
-
-        {isLocalMode && (
-          <form className="login-form login-form-local" onSubmit={submitLocalLogin}>
-            <div>
-              <span className="eyebrow">Servidor local (PostgreSQL)</span>
-              <h1>Administrador local</h1>
-            </div>
-
-            <label className="field">
-              <span>Usuario</span>
-              <input
-                type="text"
-                value={localUsername}
-                onChange={(event) => setLocalUsername(event.target.value)}
-                autoComplete="username"
-              />
-            </label>
-
-            <PasswordField
-              label="Contrasena"
-              value={localPassword}
-              onChange={(event) => setLocalPassword(event.target.value)}
-              autoComplete="current-password"
-            />
-
-            {localError && <strong className="login-error">{localError}</strong>}
-
-            <button type="submit" className="secondary-action" disabled={isLocalLoading}>
-              {isLocalLoading ? 'Validando...' : 'Entrar (local)'}
-            </button>
-          </form>
-        )}
+        
       </section>
     </main>
   );
@@ -18975,28 +18931,8 @@ function App() {
     return views[resolvedView] ?? views[defaultAllowedViewId] ?? views.dashboard;
   };
 
-  if (!supabaseConfigReady) {
-    return (
-      <main className="login-shell">
-        <section className="login-panel">
-          <div className="login-brand">
-            <div className="brand-logo-pair login-logo-pair">
-              <img src="/logos/logo-empacar.png" alt="Logo Empacar" />
-              <img src="/logos/petnova-logo.svg" alt="Logo PETnova" />
-            </div>
-            <div>
-              <strong>PETnova</strong>
-            </div>
-          </div>
-          <div className="login-form">
-            <span className="eyebrow">Configuracion pendiente</span>
-            <h1>Faltan variables de Supabase</h1>
-            <p>Agrega VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY en Vercel y vuelve a desplegar.</p>
-          </div>
-        </section>
-      </main>
-    );
-  }
+  // Si no hay Supabase configurado, continuar para permitir autenticacion
+  // via el servidor local (Postgres) usando `/api/auth/login`.
 
   if (!authReady) {
     return (
